@@ -19,6 +19,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
   String? _categoryId;
   bool _exporting = false;
   final _exportService = ExportService();
+  String _sortField = 'amount';
+  bool _sortAsc = false;
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +70,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
               ],
             ),
             const SizedBox(height: 8),
+            _buildCategorySummary(provider, txs, baseFmt),
+            const SizedBox(height: 16),
             ...txs.take(50).map((tx) {
               final cat = provider.categories.cast<dynamic>().firstWhere((c) => c.id == tx.categoryId, orElse: () => null);
               final acc = provider.getAccount(tx.accountId);
@@ -87,7 +91,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(cat?.name ?? 'Unknown', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                            Text(tx.note.isNotEmpty ? tx.note : (cat?.name ?? 'Unknown'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
                             Text('${acc?.name ?? ''} • ${DateFormat('MMM dd').format(tx.date)}',
                                 style: const TextStyle(color: Colors.white54, fontSize: 11)),
                           ],
@@ -122,6 +126,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
@@ -156,6 +161,104 @@ class _ReportsScreenState extends State<ReportsScreen> {
               _QuickPeriod(label: 'This year', onTap: () => setState(() { _from = DateTime(DateTime.now().year, 1, 1); _to = DateTime.now(); })),
             ],
           ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String?>(
+                  value: _accountId,
+                  decoration: const InputDecoration(labelText: 'Account', isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8)),
+                  items: [
+                    const DropdownMenuItem(value: null, child: Text('All Accounts')),
+                    ...provider.accounts.map((a) => DropdownMenuItem(value: a.id, child: Text(a.name, overflow: TextOverflow.ellipsis))),
+                  ],
+                  onChanged: (v) => setState(() => _accountId = v),
+                  dropdownColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: DropdownButtonFormField<String?>(
+                  value: _categoryId,
+                  decoration: const InputDecoration(labelText: 'Category', isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8)),
+                  items: [
+                    const DropdownMenuItem(value: null, child: Text('All Categories')),
+                    ...provider.categories.map((c) => DropdownMenuItem(value: c.id, child: Text('${c.icon} ${c.name}', overflow: TextOverflow.ellipsis))),
+                  ],
+                  onChanged: (v) => setState(() => _categoryId = v),
+                  dropdownColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategorySummary(DataProvider provider, List txs, NumberFormat fmt) {
+    final Map<String, double> catTotals = {};
+    final Map<String, int> catCounts = {};
+    for (final tx in txs) {
+      if (tx.isIncome) continue;
+      catTotals[tx.categoryId] = (catTotals[tx.categoryId] ?? 0) + tx.amount;
+      catCounts[tx.categoryId] = (catCounts[tx.categoryId] ?? 0) + 1;
+    }
+    if (catTotals.isEmpty) return const SizedBox();
+
+    var entries = catTotals.entries.toList();
+    entries.sort((a, b) => _sortAsc
+        ? (_sortField == 'amount' ? a.value.compareTo(b.value) : catCounts[a.key]!.compareTo(catCounts[b.key]!))
+        : (_sortField == 'amount' ? b.value.compareTo(a.value) : catCounts[b.key]!.compareTo(catCounts[a.key]!)));
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: AppTheme.surfaceVariant, borderRadius: BorderRadius.circular(14)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('Category Summary', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => setState(() {
+                  if (_sortField == 'amount') { _sortAsc = !_sortAsc; } else { _sortField = 'amount'; _sortAsc = false; }
+                }),
+                child: Row(children: [
+                  Text('Amount', style: TextStyle(fontSize: 11, color: _sortField == 'amount' ? AppTheme.primary : Colors.white54)),
+                  if (_sortField == 'amount') Icon(_sortAsc ? Icons.arrow_upward : Icons.arrow_downward, size: 12, color: AppTheme.primary),
+                ]),
+              ),
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: () => setState(() {
+                  if (_sortField == 'count') { _sortAsc = !_sortAsc; } else { _sortField = 'count'; _sortAsc = false; }
+                }),
+                child: Row(children: [
+                  Text('Count', style: TextStyle(fontSize: 11, color: _sortField == 'count' ? AppTheme.primary : Colors.white54)),
+                  if (_sortField == 'count') Icon(_sortAsc ? Icons.arrow_upward : Icons.arrow_downward, size: 12, color: AppTheme.primary),
+                ]),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...entries.map((e) {
+            final cat = provider.categories.cast<dynamic>().firstWhere((c) => c.id == e.key, orElse: () => null);
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Row(
+                children: [
+                  Text(cat?.icon ?? '📦', style: const TextStyle(fontSize: 14)),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(cat?.name ?? e.key, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+                  Text('${catCounts[e.key]}x', style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                  const SizedBox(width: 10),
+                  Text(fmt.format(e.value), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.expense)),
+                ],
+              ),
+            );
+          }),
         ],
       ),
     );

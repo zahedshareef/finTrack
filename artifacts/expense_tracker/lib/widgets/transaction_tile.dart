@@ -10,6 +10,7 @@ class TransactionTile extends StatelessWidget {
   final Category? category;
   final Account? account;
   final VoidCallback? onDelete;
+  final VoidCallback? onEdit;
 
   const TransactionTile({
     super.key,
@@ -17,6 +18,7 @@ class TransactionTile extends StatelessWidget {
     this.category,
     this.account,
     this.onDelete,
+    this.onEdit,
   });
 
   @override
@@ -29,8 +31,17 @@ class TransactionTile extends StatelessWidget {
 
     return Dismissible(
       key: Key(transaction.id),
-      direction: DismissDirection.endToStart,
+      direction: DismissDirection.horizontal,
       background: Container(
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: 16),
+        decoration: BoxDecoration(
+          color: AppTheme.primary.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Icon(Icons.edit, color: Colors.white),
+      ),
+      secondaryBackground: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
@@ -39,8 +50,17 @@ class TransactionTile extends StatelessWidget {
         ),
         child: const Icon(Icons.delete, color: Colors.white),
       ),
+      confirmDismiss: (direction) async {
+        if (direction == DismissDirection.startToEnd) {
+          onEdit?.call();
+          return false;
+        }
+        return true;
+      },
       onDismissed: (_) => onDelete?.call(),
-      child: Container(
+      child: GestureDetector(
+        onLongPress: onEdit,
+        child: Container(
         margin: const EdgeInsets.symmetric(vertical: 3),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
@@ -99,6 +119,7 @@ class TransactionTile extends StatelessWidget {
               ],
             ),
           ],
+        ),
         ),
       ),
     );

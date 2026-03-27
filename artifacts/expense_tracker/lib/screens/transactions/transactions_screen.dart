@@ -18,13 +18,45 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   DateTime? _from;
   DateTime? _to;
   bool? _isIncome;
+  String _searchQuery = '';
+  final _searchController = TextEditingController();
+  bool _showSearch = false;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Transactions'),
+        title: _showSearch
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  hintText: 'Search transactions...',
+                  hintStyle: TextStyle(color: Colors.white54),
+                  border: InputBorder.none,
+                  filled: false,
+                ),
+                onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
+              )
+            : const Text('Transactions'),
         actions: [
+          IconButton(
+            icon: Icon(_showSearch ? Icons.close : Icons.search),
+            onPressed: () => setState(() {
+              _showSearch = !_showSearch;
+              if (!_showSearch) {
+                _searchQuery = '';
+                _searchController.clear();
+              }
+            }),
+          ),
           IconButton(
             icon: const Icon(Icons.filter_list),
             onPressed: _showFilterSheet,
@@ -33,13 +65,25 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       ),
       body: Consumer<DataProvider>(
         builder: (context, provider, _) {
-          final txs = provider.getFilteredTransactions(
+          var txs = provider.getFilteredTransactions(
             accountId: _selectedAccountId,
             categoryId: _selectedCategoryId,
             from: _from,
             to: _to,
             isIncome: _isIncome,
           );
+
+          if (_searchQuery.isNotEmpty) {
+            txs = txs.where((tx) {
+              final cat = provider.categories.cast<dynamic>()
+                  .firstWhere((c) => c.id == tx.categoryId, orElse: () => null);
+              final acc = provider.getAccount(tx.accountId);
+              return (cat?.name ?? '').toLowerCase().contains(_searchQuery) ||
+                  tx.note.toLowerCase().contains(_searchQuery) ||
+                  (acc?.name ?? '').toLowerCase().contains(_searchQuery) ||
+                  tx.amount.toString().contains(_searchQuery);
+            }).toList();
+          }
 
           return Column(
             children: [
@@ -78,6 +122,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                             category: category,
                             account: account,
                             onDelete: () => provider.deleteTransaction(tx),
+                            onEdit: () => Navigator.push(context, MaterialPageRoute(
+                              builder: (_) => AddTransactionScreen(existingTransaction: tx),
+                            )),
                           );
                         },
                       ),

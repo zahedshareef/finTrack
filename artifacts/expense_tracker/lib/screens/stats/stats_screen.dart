@@ -48,6 +48,10 @@ class _StatsScreenState extends State<StatsScreen> {
                 const SizedBox(height: 8),
                 _buildBarChart(monthlyData, baseFmt),
                 const SizedBox(height: 24),
+                Text('Balance Trend', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 8),
+                _buildBalanceTrendChart(provider, baseFmt),
+                const SizedBox(height: 24),
                 Text('Balance by Account', style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 8),
                 _buildAccountToggles(provider),
@@ -224,6 +228,69 @@ class _StatsScreenState extends State<StatsScreen> {
             horizontalInterval: maxY / 4,
             getDrawingHorizontalLine: (_) => const FlLine(color: Colors.white10, strokeWidth: 1),
           ),
+          borderData: FlBorderData(show: false),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBalanceTrendChart(DataProvider provider, NumberFormat fmt) {
+    final dailyBalance = provider.getDailyBalanceTrend(days: 30);
+    if (dailyBalance.isEmpty) {
+      return Container(
+        height: 140,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: AppTheme.surfaceVariant, borderRadius: BorderRadius.circular(16)),
+        child: const Center(child: Text('Add transactions to see trend', style: TextStyle(color: Colors.white38))),
+      );
+    }
+    final minY = dailyBalance.map((e) => e.value).reduce((a, b) => a < b ? a : b);
+    final maxY = dailyBalance.map((e) => e.value).reduce((a, b) => a > b ? a : b);
+    final yRange = (maxY - minY).abs().clamp(1.0, double.infinity);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      height: 200,
+      decoration: BoxDecoration(color: AppTheme.surfaceVariant, borderRadius: BorderRadius.circular(16)),
+      child: LineChart(
+        LineChartData(
+          minY: minY - yRange * 0.1,
+          maxY: maxY + yRange * 0.1,
+          lineBarsData: [
+            LineChartBarData(
+              spots: dailyBalance.asMap().entries.map((e) {
+                return FlSpot(e.key.toDouble(), e.value.value);
+              }).toList(),
+              isCurved: true,
+              color: AppTheme.secondary,
+              barWidth: 2,
+              dotData: const FlDotData(show: false),
+              belowBarData: BarAreaData(
+                show: true,
+                color: AppTheme.secondary.withOpacity(0.1),
+              ),
+            ),
+          ],
+          titlesData: FlTitlesData(
+            leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                interval: 5,
+                getTitlesWidget: (value, meta) {
+                  final idx = value.toInt();
+                  if (idx < 0 || idx >= dailyBalance.length || idx % 5 != 0) return const SizedBox();
+                  return Text(
+                    DateFormat('Md').format(dailyBalance[idx].key),
+                    style: const TextStyle(color: Colors.white38, fontSize: 9),
+                  );
+                },
+              ),
+            ),
+          ),
+          gridData: const FlGridData(show: false),
           borderData: FlBorderData(show: false),
         ),
       ),

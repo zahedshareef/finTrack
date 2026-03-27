@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../providers/data_provider.dart';
 import '../../models/planned_payment.dart';
+import '../../models/transaction.dart';
 import '../../widgets/currency_picker.dart';
 import '../../widgets/category_picker.dart';
 import '../../models/category.dart';
@@ -121,22 +122,12 @@ class _PaymentCard extends StatelessWidget {
         ),
         onTap: () {
           if (!payment.isPaid) {
-            showDialog(
+            _showMarkPaidDialog(context, provider, payment);
+          } else {
+            showModalBottomSheet(
               context: context,
-              builder: (ctx) => AlertDialog(
-                title: const Text('Mark as Paid?'),
-                content: Text('Mark "${payment.name}" as paid?'),
-                actions: [
-                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-                  ElevatedButton(
-                    onPressed: () {
-                      provider.markPaymentAsPaid(payment.id);
-                      Navigator.pop(ctx);
-                    },
-                    child: const Text('Mark Paid'),
-                  ),
-                ],
-              ),
+              isScrollControlled: true,
+              builder: (_) => _EditPaymentSheet(payment: payment),
             );
           }
         },
@@ -156,6 +147,199 @@ class _PaymentCard extends StatelessWidget {
         },
       ),
     );
+  }
+}
+
+void _showMarkPaidDialog(BuildContext context, DataProvider provider, PlannedPayment payment) {
+  final accounts = provider.accounts;
+  String? selectedAccountId = payment.accountId.isNotEmpty ? payment.accountId : (accounts.isNotEmpty ? accounts.first.id : null);
+
+  showDialog(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setState) => AlertDialog(
+        title: const Text('Mark as Paid'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Record expense of ${NumberFormat.currency(symbol: '${payment.currency} ', decimalDigits: 2).format(payment.amount)} for "${payment.name}"?'),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: selectedAccountId,
+              decoration: const InputDecoration(labelText: 'Deduct from Account'),
+              items: accounts.map((a) => DropdownMenuItem(value: a.id, child: Text(a.name))).toList(),
+              onChanged: (v) => setState(() => selectedAccountId = v),
+              dropdownColor: Theme.of(ctx).colorScheme.surfaceContainerHighest,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              provider.markPaymentAsPaid(payment.id);
+              if (selectedAccountId != null) {
+                provider.addTransaction(AppTransaction(
+                  id: provider.generateId(),
+                  amount: payment.amount,
+                  isIncome: false,
+                  date: DateTime.now(),
+                  categoryId: payment.categoryId,
+                  accountId: selectedAccountId!,
+                  note: '${payment.name}${payment.note.isNotEmpty ? ': ${payment.note}' : ''}',
+                  createdAt: DateTime.now(),
+                ));
+              }
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('"${payment.name}" marked as paid')),
+              );
+            },
+            child: const Text('Mark Paid'),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _EditPaymentSheet extends StatefulWidget {
+  final PlannedPayment payment;
+  const _EditPaymentSheet({required this.payment});
+
+  @override
+  State<_EditPaymentSheet> createState() => _EditPaymentSheetState();
+}
+
+class _EditPaymentSheetState extends State<_EditPaymentSheet> {
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _amountCtrl;
+  late final TextEditingController _noteCtrl;
+  late String _currency;
+  late String _accountId;
+  late DateTime _dueDate;
+  late bool _isRecurring;
+  late String _recurrencePeriod;
+
+  @override
+  void initState() {
+    super.initState();
+    final p = widget.payment;
+    _nameCtrl = TextEditingController(text: p.name);
+    _amountCtrl = TextEditingController(text: p.amount.toString());
+    _noteCtrl = TextEditingController(text: p.note);
+    _currency = p.currency;
+    _accountId = p.accountId;
+    _dueDate = p.dueDate;
+    _isRecurring = p.isRecurring;
+    _recurrencePeriod = p.recurrencePeriod;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.read<DataProvider>();
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Edit Planned Payment', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            TextField(controller: _nameCtrl, decoration: const InputDecoration(labelText: 'Payment Name')),
+            const SizedBox(height: 12),
+            TextField(
+                controller: _amountCtrl,
+                decoration: const InputDecoration(labelText: 'Amount'),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+            const SizedBox(height: 12),
+            CurrencyPickerDropdown(value: _currency, onChanged: (v) => setState(() => _currency = v!)),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: _accountId.isNotEmpty ? _accountId : null,
+              decoration: const InputDecoration(labelText: 'Account'),
+              items: provider.accounts.map((a) => DropdownMenuItem(value: a.id, child: Text(a.name))).toList(),
+              onChanged: (v) => setState(() => _accountId = v ?? _accountId),
+              dropdownColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            ),
+            const SizedBox(height: 12),
+            InkWell(
+              onTap: () async {
+                final d = await showDatePicker(
+                  context: context,
+                  initialDate: _dueDate,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(2030),
+                );
+                if (d != null) setState(() => _dueDate = d);
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(border: Border.all(color: Colors.white24), borderRadius: BorderRadius.circular(12)),
+                child: Row(
+                  children: [
+                    const Icon(Icons.calendar_today, color: Colors.white54, size: 18),
+                    const SizedBox(width: 10),
+                    Text('Due: ${DateFormat('MMM dd, yyyy').format(_dueDate)}', style: const TextStyle(color: Colors.white)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SwitchListTile(
+              value: _isRecurring,
+              onChanged: (v) => setState(() => _isRecurring = v),
+              title: const Text('Recurring'),
+              contentPadding: EdgeInsets.zero,
+              activeColor: AppTheme.primary,
+            ),
+            if (_isRecurring)
+              DropdownButtonFormField<String>(
+                value: _recurrencePeriod,
+                decoration: const InputDecoration(labelText: 'Period'),
+                items: const [
+                  DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
+                  DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
+                  DropdownMenuItem(value: 'yearly', child: Text('Yearly')),
+                ],
+                onChanged: (v) => setState(() => _recurrencePeriod = v!),
+                dropdownColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+              ),
+            const SizedBox(height: 12),
+            TextField(controller: _noteCtrl, decoration: const InputDecoration(labelText: 'Note (optional)')),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _submit,
+                child: const Text('Save Changes'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _submit() async {
+    if (_nameCtrl.text.isEmpty || _amountCtrl.text.isEmpty) return;
+    final provider = context.read<DataProvider>();
+    final updated = widget.payment.copyWith(
+      name: _nameCtrl.text,
+      amount: double.tryParse(_amountCtrl.text) ?? widget.payment.amount,
+      currency: _currency,
+      accountId: _accountId,
+      dueDate: _dueDate,
+      isRecurring: _isRecurring,
+      recurrencePeriod: _recurrencePeriod,
+      note: _noteCtrl.text,
+    );
+    await provider.updatePlannedPayment(updated);
+    if (context.mounted) Navigator.pop(context);
   }
 }
 

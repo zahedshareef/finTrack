@@ -30,6 +30,34 @@ class PlannedPayment {
   bool get isOverdue => !isPaid && dueDate.isBefore(DateTime.now());
   bool get isDueSoon => !isPaid && dueDate.difference(DateTime.now()).inDays <= 3 && dueDate.isAfter(DateTime.now());
 
+  PlannedPayment copyWith({
+    String? name,
+    double? amount,
+    String? currency,
+    String? accountId,
+    String? categoryId,
+    DateTime? dueDate,
+    bool? isRecurring,
+    String? recurrencePeriod,
+    bool? isPaid,
+    String? note,
+  }) {
+    return PlannedPayment(
+      id: id,
+      name: name ?? this.name,
+      amount: amount ?? this.amount,
+      currency: currency ?? this.currency,
+      accountId: accountId ?? this.accountId,
+      categoryId: categoryId ?? this.categoryId,
+      dueDate: dueDate ?? this.dueDate,
+      isRecurring: isRecurring ?? this.isRecurring,
+      recurrencePeriod: recurrencePeriod ?? this.recurrencePeriod,
+      isPaid: isPaid ?? this.isPaid,
+      note: note ?? this.note,
+      createdAt: createdAt,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,

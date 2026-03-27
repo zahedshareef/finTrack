@@ -9,6 +9,7 @@ import '../accounts/add_account_screen.dart';
 import '../transactions/add_transaction_screen.dart';
 import '../more/planned_payments_screen.dart';
 import '../stats/stats_screen.dart';
+import '../more/reports_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -178,7 +179,7 @@ class HomeScreen extends StatelessWidget {
       children: [
         _QuickActionChip(
           icon: Icons.bar_chart,
-          label: 'Balance',
+          label: 'Statistics',
           onTap: () => Navigator.push(
               context, MaterialPageRoute(builder: (_) => const StatsScreen())),
         ),
@@ -188,6 +189,13 @@ class HomeScreen extends StatelessWidget {
           label: 'Payments',
           onTap: () => Navigator.push(
               context, MaterialPageRoute(builder: (_) => const PlannedPaymentsScreen())),
+        ),
+        const SizedBox(width: 8),
+        _QuickActionChip(
+          icon: Icons.file_download,
+          label: 'Export',
+          onTap: () => Navigator.push(
+              context, MaterialPageRoute(builder: (_) => const ReportsScreen())),
         ),
       ],
     );

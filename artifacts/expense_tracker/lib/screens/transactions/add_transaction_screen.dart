@@ -9,7 +9,8 @@ import '../../theme/app_theme.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   final String? defaultAccountId;
-  const AddTransactionScreen({super.key, this.defaultAccountId});
+  final AppTransaction? existingTransaction;
+  const AddTransactionScreen({super.key, this.defaultAccountId, this.existingTransaction});
 
   @override
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
@@ -27,7 +28,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   @override
   void initState() {
     super.initState();
-    _accountId = widget.defaultAccountId;
+    _accountId = widget.defaultAccountId ?? widget.existingTransaction?.accountId;
+    if (widget.existingTransaction != null) {
+      final tx = widget.existingTransaction!;
+      _amountController.text = tx.amount.toString();
+      _noteController.text = tx.note;
+      _isIncome = tx.isIncome;
+      _date = tx.date;
+    }
   }
 
   @override
@@ -46,7 +54,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Transaction')),
+      appBar: AppBar(title: Text(widget.existingTransaction != null ? 'Edit Transaction' : 'Add Transaction')),
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -168,7 +176,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _isIncome ? AppTheme.income : AppTheme.expense,
                   ),
-                  child: const Text('Add Transaction'),
+                  child: Text(widget.existingTransaction != null ? 'Save Changes' : 'Add Transaction'),
                 ),
               ),
             ],
@@ -204,23 +212,51 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_category == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a category')),
-      );
-      return;
-    }
     final provider = context.read<DataProvider>();
-    await provider.addTransaction(AppTransaction(
-      id: provider.generateId(),
-      accountId: _accountId!,
-      categoryId: _category!.id,
-      amount: double.parse(_amountController.text),
-      isIncome: _isIncome,
-      note: _noteController.text,
-      date: _date,
-      createdAt: DateTime.now(),
-    ));
+
+    if (widget.existingTransaction != null) {
+      final old = widget.existingTransaction!;
+      if (_category == null) {
+        final existingCat = provider.categories.cast<dynamic>()
+            .firstWhere((c) => c.id == old.categoryId, orElse: () => null);
+        if (existingCat == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please select a category')),
+          );
+          return;
+        }
+      }
+      await provider.updateTransaction(
+        old,
+        AppTransaction(
+          id: old.id,
+          accountId: _accountId!,
+          categoryId: _category?.id ?? old.categoryId,
+          amount: double.parse(_amountController.text),
+          isIncome: _isIncome,
+          note: _noteController.text,
+          date: _date,
+          createdAt: old.createdAt,
+        ),
+      );
+    } else {
+      if (_category == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a category')),
+        );
+        return;
+      }
+      await provider.addTransaction(AppTransaction(
+        id: provider.generateId(),
+        accountId: _accountId!,
+        categoryId: _category!.id,
+        amount: double.parse(_amountController.text),
+        isIncome: _isIncome,
+        note: _noteController.text,
+        date: _date,
+        createdAt: DateTime.now(),
+      ));
+    }
     if (context.mounted) Navigator.pop(context);
   }
 }

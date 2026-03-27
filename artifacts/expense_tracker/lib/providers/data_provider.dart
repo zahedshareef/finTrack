@@ -143,6 +143,24 @@ class DataProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateTransaction(AppTransaction old, AppTransaction updated) async {
+    // Reverse old effect on account
+    final oldAccIdx = _accounts.indexWhere((a) => a.id == old.accountId);
+    if (oldAccIdx != -1) {
+      _accounts[oldAccIdx].balance -= old.isIncome ? old.amount : -old.amount;
+    }
+    // Apply new effect on account
+    final newAccIdx = _accounts.indexWhere((a) => a.id == updated.accountId);
+    if (newAccIdx != -1) {
+      _accounts[newAccIdx].balance += updated.isIncome ? updated.amount : -updated.amount;
+    }
+    final idx = _transactions.indexWhere((t) => t.id == old.id);
+    if (idx != -1) _transactions[idx] = updated;
+    await _storage.saveAccounts(_accounts);
+    await _storage.saveTransactions(_transactions);
+    notifyListeners();
+  }
+
   List<AppTransaction> getTransactionsForAccount(String accountId) =>
       _transactions.where((t) => t.accountId == accountId).toList()
         ..sort((a, b) => b.date.compareTo(a.date));
@@ -198,6 +216,27 @@ class DataProvider extends ChangeNotifier {
     return _transactions
         .where((t) => !t.isIncome && t.date.year == last.year && t.date.month == last.month)
         .fold(0.0, (sum, t) => sum + t.amount);
+  }
+
+  List<MapEntry<DateTime, double>> getDailyBalanceTrend({int days = 30}) {
+    final now = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    double runningBalance = _accounts
+        .where((a) => a.includeInTotal)
+        .fold(0.0, (sum, a) => sum + toBase(a.balance, a.currency));
+
+    final result = <MapEntry<DateTime, double>>[];
+    for (int i = 0; i < days; i++) {
+      final day = now.subtract(Duration(days: i));
+      result.add(MapEntry(day, runningBalance));
+      final dayTxs = _transactions.where((t) =>
+          t.date.year == day.year && t.date.month == day.month && t.date.day == day.day);
+      for (final tx in dayTxs) {
+        final acc = _accounts.cast<Account?>().firstWhere((a) => a?.id == tx.accountId, orElse: () => null);
+        final txBase = toBase(tx.amount, acc?.currency ?? baseCurrency);
+        runningBalance -= tx.isIncome ? txBase : -txBase;
+      }
+    }
+    return result.reversed.toList();
   }
 
   double predictNextMonth() {
