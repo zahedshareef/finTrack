@@ -222,39 +222,70 @@ class DataProvider extends ChangeNotifier {
       ..sort((a, b) => b.date.compareTo(a.date));
   }
 
+  // Returns the set of accountIds that are included in total
+  Set<String> get _includedAccountIds =>
+      _accounts.where((a) => a.includeInTotal).map((a) => a.id).toSet();
+
   Map<String, double> getExpensesByCategory({DateTime? from, DateTime? to}) {
-    final txs = getFilteredTransactions(from: from, to: to, isIncome: false);
+    final included = _includedAccountIds;
+    final txs = getFilteredTransactions(from: from, to: to, isIncome: false)
+        .where((t) => included.contains(t.accountId));
     final Map<String, double> result = {};
     for (final tx in txs) {
-      result[tx.categoryId] = (result[tx.categoryId] ?? 0) + tx.amount;
+      final acc = getAccount(tx.accountId);
+      final amountBase = toBase(tx.amount, acc?.currency ?? baseCurrency);
+      result[tx.categoryId] = (result[tx.categoryId] ?? 0) + amountBase;
     }
     return result;
   }
 
   List<MapEntry<String, double>> getMonthlyOutflow({int months = 6}) {
     final now = DateTime.now();
+    final included = _includedAccountIds;
     return List.generate(months, (i) {
       final month = DateTime(now.year, now.month - (months - 1 - i));
       final txs = _transactions.where((t) =>
-          !t.isIncome && t.date.year == month.year && t.date.month == month.month);
-      final total = txs.fold(0.0, (sum, t) => sum + t.amount);
+          !t.isIncome &&
+          t.date.year == month.year &&
+          t.date.month == month.month &&
+          included.contains(t.accountId));
+      final total = txs.fold(0.0, (sum, t) {
+        final acc = getAccount(t.accountId);
+        return sum + toBase(t.amount, acc?.currency ?? baseCurrency);
+      });
       return MapEntry('${month.month}/${month.year}', total);
     });
   }
 
   double getSpendingThisMonth() {
     final now = DateTime.now();
+    final included = _includedAccountIds;
     return _transactions
-        .where((t) => !t.isIncome && t.date.year == now.year && t.date.month == now.month)
-        .fold(0.0, (sum, t) => sum + t.amount);
+        .where((t) =>
+            !t.isIncome &&
+            t.date.year == now.year &&
+            t.date.month == now.month &&
+            included.contains(t.accountId))
+        .fold(0.0, (sum, t) {
+          final acc = getAccount(t.accountId);
+          return sum + toBase(t.amount, acc?.currency ?? baseCurrency);
+        });
   }
 
   double getSpendingLastMonth() {
     final now = DateTime.now();
     final last = DateTime(now.year, now.month - 1);
+    final included = _includedAccountIds;
     return _transactions
-        .where((t) => !t.isIncome && t.date.year == last.year && t.date.month == last.month)
-        .fold(0.0, (sum, t) => sum + t.amount);
+        .where((t) =>
+            !t.isIncome &&
+            t.date.year == last.year &&
+            t.date.month == last.month &&
+            included.contains(t.accountId))
+        .fold(0.0, (sum, t) {
+          final acc = getAccount(t.accountId);
+          return sum + toBase(t.amount, acc?.currency ?? baseCurrency);
+        });
   }
 
   List<MapEntry<DateTime, double>> getDailyBalanceTrend({int days = 30}) {
