@@ -21,10 +21,29 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   String _searchQuery = '';
   final _searchController = TextEditingController();
   bool _showSearch = false;
+  static const int _pageSize = 30;
+  int _visibleCount = _pageSize;
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      setState(() => _visibleCount += _pageSize);
+    }
+  }
+
+  void _resetPagination() => setState(() => _visibleCount = _pageSize);
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -108,9 +127,16 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     ? const Center(
                         child: Text('No transactions found', style: TextStyle(color: Colors.white54)))
                     : ListView.builder(
+                        controller: _scrollController,
                         padding: const EdgeInsets.all(12),
-                        itemCount: txs.length,
+                        itemCount: _visibleCount < txs.length ? _visibleCount + 1 : txs.length,
                         itemBuilder: (ctx, i) {
+                          if (i >= _visibleCount) {
+                            return const Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Center(child: CircularProgressIndicator()),
+                            );
+                          }
                           final tx = txs[i];
                           final category = provider.getCategoryById(tx.categoryId);
                           final account = provider.getAccount(tx.accountId);
@@ -149,6 +175,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         _from = null;
         _to = null;
         _isIncome = null;
+        _visibleCount = _pageSize;
       });
 
   void _showFilterSheet() {
@@ -239,7 +266,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    setState(() {});
+                    setState(() { _visibleCount = _pageSize; });
                     Navigator.pop(ctx);
                   },
                   child: const Text('Apply Filters'),

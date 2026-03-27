@@ -364,9 +364,45 @@ class DataProvider extends ChangeNotifier {
     if (idx != -1) {
       final p = _plannedPayments[idx];
       _plannedPayments[idx] = p.copyWith(isPaid: true);
+      await NotificationService.cancelNotification(_notificationId(id));
+
+      if (p.isRecurring) {
+        final nextDue = _nextDueDate(p.dueDate, p.recurrencePeriod);
+        final nextPayment = PlannedPayment(
+          id: generateId(),
+          name: p.name,
+          amount: p.amount,
+          currency: p.currency,
+          accountId: p.accountId,
+          categoryId: p.categoryId,
+          dueDate: nextDue,
+          isRecurring: true,
+          recurrencePeriod: p.recurrencePeriod,
+          isPaid: false,
+          note: p.note,
+          createdAt: DateTime.now(),
+        );
+        _plannedPayments.add(nextPayment);
+        _schedulePaymentNotification(nextPayment);
+      }
+
       await _storage.savePlannedPayments(_plannedPayments);
       notifyListeners();
-      await NotificationService.cancelNotification(_notificationId(id));
+    }
+  }
+
+  DateTime _nextDueDate(DateTime current, String period) {
+    switch (period) {
+      case 'weekly':
+        return current.add(const Duration(days: 7));
+      case 'yearly':
+        return DateTime(current.year + 1, current.month, current.day);
+      case 'monthly':
+      default:
+        final nextMonth = current.month == 12 ? 1 : current.month + 1;
+        final nextYear = current.month == 12 ? current.year + 1 : current.year;
+        final lastDay = DateTime(nextYear, nextMonth + 1, 0).day;
+        return DateTime(nextYear, nextMonth, current.day.clamp(1, lastDay));
     }
   }
 
