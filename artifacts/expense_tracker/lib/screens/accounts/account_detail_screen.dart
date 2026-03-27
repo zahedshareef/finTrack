@@ -63,9 +63,7 @@ class AccountDetailScreen extends StatelessWidget {
                         itemCount: txs.length,
                         itemBuilder: (ctx, i) {
                           final tx = txs[i];
-                          final category = provider.categories
-                              .cast<dynamic>()
-                              .firstWhere((c) => c.id == tx.categoryId, orElse: () => null);
+                          final category = provider.getCategoryById(tx.categoryId);
                           return TransactionTile(
                             transaction: tx,
                             category: category,

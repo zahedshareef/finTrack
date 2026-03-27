@@ -217,8 +217,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     if (widget.existingTransaction != null) {
       final old = widget.existingTransaction!;
       if (_category == null) {
-        final existingCat = provider.categories.cast<dynamic>()
-            .firstWhere((c) => c.id == old.categoryId, orElse: () => null);
+        final existingCat = provider.getCategoryById(old.categoryId);
         if (existingCat == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Please select a category')),

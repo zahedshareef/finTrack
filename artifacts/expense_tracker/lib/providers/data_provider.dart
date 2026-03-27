@@ -11,6 +11,7 @@ import '../models/gold_holding.dart';
 import '../services/storage_service.dart';
 import '../services/currency_service.dart';
 import '../services/gold_service.dart';
+import '../services/notification_service.dart';
 
 class DataProvider extends ChangeNotifier {
   final StorageService _storage;
@@ -36,6 +37,10 @@ class DataProvider extends ChangeNotifier {
   List<Account> get accounts => _accounts;
   List<AppTransaction> get transactions => _transactions;
   List<cat_model.Category> get categories => _categories;
+
+  cat_model.Category? getCategoryById(String id) {
+    try { return _categories.firstWhere((c) => c.id == id); } catch (_) { return null; }
+  }
   List<Debt> get debts => _debts;
   List<Budget> get budgets => _budgets;
   List<Goal> get goals => _goals;
@@ -78,6 +83,13 @@ class DataProvider extends ChangeNotifier {
     if (fromCurrency == baseCurrency || _exchangeRates.isEmpty) return amount;
     final fromRate = _exchangeRates[fromCurrency] ?? 1.0;
     final toRate = _exchangeRates[baseCurrency] ?? 1.0;
+    return amount / fromRate * toRate;
+  }
+
+  double fromBase(double amount, String toCurrency) {
+    if (toCurrency == baseCurrency || _exchangeRates.isEmpty) return amount;
+    final fromRate = _exchangeRates[baseCurrency] ?? 1.0;
+    final toRate = _exchangeRates[toCurrency] ?? 1.0;
     return amount / fromRate * toRate;
   }
 
@@ -333,6 +345,7 @@ class DataProvider extends ChangeNotifier {
     _plannedPayments.add(payment);
     await _storage.savePlannedPayments(_plannedPayments);
     notifyListeners();
+    _schedulePaymentNotification(payment);
   }
 
   Future<void> updatePlannedPayment(PlannedPayment payment) async {
@@ -341,6 +354,8 @@ class DataProvider extends ChangeNotifier {
       _plannedPayments[idx] = payment;
       await _storage.savePlannedPayments(_plannedPayments);
       notifyListeners();
+      await NotificationService.cancelNotification(_notificationId(payment.id));
+      if (!payment.isPaid) _schedulePaymentNotification(payment);
     }
   }
 
@@ -348,15 +363,10 @@ class DataProvider extends ChangeNotifier {
     final idx = _plannedPayments.indexWhere((p) => p.id == id);
     if (idx != -1) {
       final p = _plannedPayments[idx];
-      _plannedPayments[idx] = PlannedPayment(
-        id: p.id, name: p.name, amount: p.amount, currency: p.currency,
-        accountId: p.accountId, categoryId: p.categoryId,
-        dueDate: p.dueDate, isRecurring: p.isRecurring,
-        recurrencePeriod: p.recurrencePeriod, isPaid: true,
-        note: p.note, createdAt: p.createdAt,
-      );
+      _plannedPayments[idx] = p.copyWith(isPaid: true);
       await _storage.savePlannedPayments(_plannedPayments);
       notifyListeners();
+      await NotificationService.cancelNotification(_notificationId(id));
     }
   }
 
@@ -364,6 +374,19 @@ class DataProvider extends ChangeNotifier {
     _plannedPayments.removeWhere((p) => p.id == id);
     await _storage.savePlannedPayments(_plannedPayments);
     notifyListeners();
+    await NotificationService.cancelNotification(_notificationId(id));
+  }
+
+  int _notificationId(String paymentId) => paymentId.hashCode.abs() % 100000;
+
+  void _schedulePaymentNotification(PlannedPayment payment) {
+    if (payment.isPaid) return;
+    NotificationService.schedulePaymentReminder(
+      id: _notificationId(payment.id),
+      name: payment.name,
+      amount: payment.amount,
+      dueDate: payment.dueDate,
+    );
   }
 
   // Gold CRUD

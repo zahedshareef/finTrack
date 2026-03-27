@@ -73,7 +73,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             _buildCategorySummary(provider, txs, baseFmt),
             const SizedBox(height: 16),
             ...txs.take(50).map((tx) {
-              final cat = provider.categories.cast<dynamic>().firstWhere((c) => c.id == tx.categoryId, orElse: () => null);
+              final cat = provider.getCategoryById(tx.categoryId);
               final acc = provider.getAccount(tx.accountId);
               return Padding(
                 padding: const EdgeInsets.only(bottom: 6),
@@ -244,7 +244,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ),
           const SizedBox(height: 8),
           ...entries.map((e) {
-            final cat = provider.categories.cast<dynamic>().firstWhere((c) => c.id == e.key, orElse: () => null);
+            final cat = provider.getCategoryById(e.key);
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 3),
               child: Row(

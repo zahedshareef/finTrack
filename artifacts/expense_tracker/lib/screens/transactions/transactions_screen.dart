@@ -75,8 +75,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
           if (_searchQuery.isNotEmpty) {
             txs = txs.where((tx) {
-              final cat = provider.categories.cast<dynamic>()
-                  .firstWhere((c) => c.id == tx.categoryId, orElse: () => null);
+              final cat = provider.getCategoryById(tx.categoryId);
               final acc = provider.getAccount(tx.accountId);
               return (cat?.name ?? '').toLowerCase().contains(_searchQuery) ||
                   tx.note.toLowerCase().contains(_searchQuery) ||
@@ -113,9 +112,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                         itemCount: txs.length,
                         itemBuilder: (ctx, i) {
                           final tx = txs[i];
-                          final category = provider.categories
-                              .cast<dynamic>()
-                              .firstWhere((c) => c.id == tx.categoryId, orElse: () => null);
+                          final category = provider.getCategoryById(tx.categoryId);
                           final account = provider.getAccount(tx.accountId);
                           return TransactionTile(
                             transaction: tx,
@@ -176,6 +173,19 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   ...provider.accounts.map((a) => DropdownMenuItem(value: a.id, child: Text(a.name))),
                 ],
                 onChanged: (v) => setModalState(() => _selectedAccountId = v),
+                dropdownColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String?>(
+                value: _selectedCategoryId,
+                decoration: const InputDecoration(labelText: 'Category'),
+                items: [
+                  const DropdownMenuItem(value: null, child: Text('All Categories')),
+                  ...provider.categories
+                      .where((c) => !c.isIncome)
+                      .map((c) => DropdownMenuItem(value: c.id, child: Text('${c.icon} ${c.name}'))),
+                ],
+                onChanged: (v) => setModalState(() => _selectedCategoryId = v),
                 dropdownColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               ),
               const SizedBox(height: 12),

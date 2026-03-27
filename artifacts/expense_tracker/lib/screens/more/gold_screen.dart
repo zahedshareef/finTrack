@@ -36,14 +36,9 @@ class _GoldScreenState extends State<GoldScreen> {
           double totalCurrentValue = 0;
 
           for (final h in holdings) {
-            final costInBase = provider.toBase(h.totalCost, h.currency);
-            totalCost += costInBase;
+            totalCost += provider.toBase(h.totalCost, h.currency);
             if (currentGoldPrice > 0) {
-              totalCurrentValue += provider.toBase(h.currentValue(
-                provider.goldPriceUSD != null
-                    ? (provider.toBase(provider.goldPriceUSD!, 'USD') / (provider.exchangeRates[provider.baseCurrency] ?? 1) * (provider.exchangeRates['USD'] ?? 1))
-                    : 0,
-              ), h.currency);
+              totalCurrentValue += h.weightGrams * currentGoldPrice;
             }
           }
 
@@ -189,11 +184,11 @@ class _GoldHoldingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat.currency(symbol: '${holding.currency} ', decimalDigits: 2);
-    final currentPriceInHoldingCurrency = currentGoldPriceInBase > 0
-        ? provider.toBase(currentGoldPriceInBase, provider.baseCurrency) /
-            (provider.exchangeRates[holding.currency] ?? 1) *
-            (provider.exchangeRates[provider.baseCurrency] ?? 1)
-        : 0.0;
+    // Convert base gold price to holding's currency:
+    // toBase converts FROM a currency TO base; inverse converts FROM base TO target currency.
+    final currentPriceInHoldingCurrency = currentGoldPriceInBase > 0 && holding.currency != provider.baseCurrency
+        ? provider.fromBase(currentGoldPriceInBase, holding.currency)
+        : currentGoldPriceInBase;
 
     final pl = holding.profitLoss(currentPriceInHoldingCurrency > 0 ? currentPriceInHoldingCurrency : holding.buyPricePerGram);
     final plPct = holding.profitLossPercent(currentPriceInHoldingCurrency > 0 ? currentPriceInHoldingCurrency : holding.buyPricePerGram);

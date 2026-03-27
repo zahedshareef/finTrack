@@ -99,10 +99,7 @@ class _StatsScreenState extends State<StatsScreen> {
 
     for (int i = 0; i < sorted.length && i < 8; i++) {
       final entry = sorted[i];
-      final cat = provider.categories.cast<dynamic>().firstWhere(
-        (c) => c.id == entry.key,
-        orElse: () => null,
-      );
+      final cat = provider.getCategoryById(entry.key);
       final color = cat?.color ?? Colors.grey;
       final pct = total > 0 ? entry.value / total * 100 : 0;
       final isTouched = i == _touchedPieIndex;
