@@ -48,6 +48,38 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 - `pnpm run build` — runs `typecheck` first, then recursively runs `build` in all packages that define it
 - `pnpm run typecheck` — runs `tsc --build --emitDeclarationOnly` using project references
 
+## Flutter App
+
+### `artifacts/expense_tracker` (Flutter)
+
+A full-featured expense tracking mobile app built with Flutter 3.32.0 targeting Flutter Web for browser preview.
+
+- **Port**: 5000
+- **Run**: `flutter run -d web-server --web-port 5000 --web-hostname 0.0.0.0` in `artifacts/expense_tracker/`
+- **Flutter binary**: `/nix/store/i07crp4mg1rimd97s1byrq4gasg7dsk5-flutter-wrapped-3.32.0-sdk-links/bin/flutter`
+- **State management**: Provider
+- **Persistence**: SharedPreferences (local storage, no backend)
+- **Theme**: Material 3 dark, purple/teal accent
+
+**Features:**
+- Multiple accounts with multi-currency support and live exchange rates (open.er-api.com)
+- Debt tracking (I Owe / Owed to Me)
+- Statistics and charts (pie, bar with fl_chart) and spending predictions (linear regression)
+- Budgets per category with progress bars
+- Savings goals with emoji icons
+- Planned payment reminders (recurring or one-time)
+- CSV/PDF export (csv, pdf, printing packages)
+- Gold investment P&L tracker (live price from frankfurter.app)
+- Settings screen with base currency selector
+
+**Screen structure:**
+- `lib/screens/home/` — Home with total balance, account grid, month summary
+- `lib/screens/accounts/` — Account list, add/edit, detail
+- `lib/screens/transactions/` — Transaction list with filters, add transaction
+- `lib/screens/debts/` — Debt tabs (I Owe / Owed to Me), add/edit debt
+- `lib/screens/stats/` — Pie chart, bar chart, forecast
+- `lib/screens/more/` — Budgets, Goals, Planned Payments, Reports, Gold, Settings
+
 ## Packages
 
 ### `artifacts/api-server` (`@workspace/api-server`)
