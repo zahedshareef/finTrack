@@ -19,6 +19,9 @@ class StorageService {
   static const String _paymentsKey = 'planned_payments';
   static const String _goldKey = 'gold_holdings';
   static const String _settingsKey = 'settings';
+  static const String _ratesKey = 'exchange_rates_cache';
+  static const String _ratesTimestampKey = 'exchange_rates_timestamp';
+  static const String _ratesBaseKey = 'exchange_rates_base';
 
   final SharedPreferences _prefs;
 
@@ -122,6 +125,28 @@ class StorageService {
 
   Future<void> savePlannedPayments(List<PlannedPayment> payments) async {
     await _prefs.setString(_paymentsKey, jsonEncode(payments.map((p) => p.toJson()).toList()));
+  }
+
+  // Exchange Rates Cache
+  Map<String, double>? getCachedRates(String base) {
+    final cachedBase = _prefs.getString(_ratesBaseKey);
+    if (cachedBase != base) return null;
+    final data = _prefs.getString(_ratesKey);
+    if (data == null) return null;
+    final map = jsonDecode(data) as Map<String, dynamic>;
+    return map.map((k, v) => MapEntry(k, (v as num).toDouble()));
+  }
+
+  DateTime? getCachedRatesTimestamp() {
+    final ts = _prefs.getInt(_ratesTimestampKey);
+    if (ts == null) return null;
+    return DateTime.fromMillisecondsSinceEpoch(ts);
+  }
+
+  Future<void> saveRatesCache(String base, Map<String, double> rates) async {
+    await _prefs.setString(_ratesBaseKey, base);
+    await _prefs.setString(_ratesKey, jsonEncode(rates));
+    await _prefs.setInt(_ratesTimestampKey, DateTime.now().millisecondsSinceEpoch);
   }
 
   // Gold Holdings

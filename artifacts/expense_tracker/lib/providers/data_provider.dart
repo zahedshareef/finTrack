@@ -41,6 +41,28 @@ class DataProvider extends ChangeNotifier {
   cat_model.Category? getCategoryById(String id) {
     try { return _categories.firstWhere((c) => c.id == id); } catch (_) { return null; }
   }
+
+  Future<void> addCategory(cat_model.Category category) async {
+    _categories.add(category);
+    await _storage.saveCategories(_categories);
+    notifyListeners();
+  }
+
+  Future<void> updateCategory(cat_model.Category updated) async {
+    final idx = _categories.indexWhere((c) => c.id == updated.id);
+    if (idx != -1) {
+      _categories[idx] = updated;
+      await _storage.saveCategories(_categories);
+      notifyListeners();
+    }
+  }
+
+  Future<void> deleteCategory(String id) async {
+    _categories.removeWhere((c) => c.id == id);
+    await _storage.saveCategories(_categories);
+    notifyListeners();
+  }
+
   List<Debt> get debts => _debts;
   List<Budget> get budgets => _budgets;
   List<Goal> get goals => _goals;
@@ -63,6 +85,9 @@ class DataProvider extends ChangeNotifier {
     _plannedPayments = _storage.getPlannedPayments();
     _goldHoldings = _storage.getGoldHoldings();
     _settings = _storage.getSettings();
+    // Hydrate from persisted rate cache for offline use
+    final cachedRates = _storage.getCachedRates(baseCurrency);
+    if (cachedRates != null) _exchangeRates = cachedRates;
     _isLoading = false;
     notifyListeners();
     _fetchRatesAndGold();
@@ -70,7 +95,9 @@ class DataProvider extends ChangeNotifier {
 
   Future<void> _fetchRatesAndGold() async {
     try {
-      _exchangeRates = await _currencyService.getRates(baseCurrency);
+      final rates = await _currencyService.getRates(baseCurrency);
+      _exchangeRates = rates;
+      await _storage.saveRatesCache(baseCurrency, rates);
       _goldPriceUSD = await _goldService.getGoldPriceUSD();
       notifyListeners();
     } catch (_) {}

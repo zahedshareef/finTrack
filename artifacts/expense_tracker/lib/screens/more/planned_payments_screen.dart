@@ -122,7 +122,7 @@ class _PaymentCard extends StatelessWidget {
         ),
         onTap: () {
           if (!payment.isPaid) {
-            _showMarkPaidDialog(context, provider, payment);
+            _showPaymentActionsDialog(context, provider, payment);
           } else {
             showModalBottomSheet(
               context: context,
@@ -148,6 +148,40 @@ class _PaymentCard extends StatelessWidget {
       ),
     );
   }
+}
+
+void _showPaymentActionsDialog(BuildContext context, DataProvider provider, PlannedPayment payment) {
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(payment.name),
+      content: Text('What would you like to do with this payment?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.pop(ctx);
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              builder: (_) => _EditPaymentSheet(payment: payment),
+            );
+          },
+          child: const Text('Edit'),
+        ),
+        FilledButton(
+          onPressed: () {
+            Navigator.pop(ctx);
+            _showMarkPaidDialog(context, provider, payment);
+          },
+          child: const Text('Mark as Paid'),
+        ),
+      ],
+    ),
+  );
 }
 
 void _showMarkPaidDialog(BuildContext context, DataProvider provider, PlannedPayment payment) {
