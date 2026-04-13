@@ -233,7 +233,7 @@ class _GoldHoldingCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text('Buy Price', style: TextStyle(color: Colors.white54, fontSize: 11)),
-                    Text(fmt.format(holding.buyPricePerGram) + '/g', style: const TextStyle(fontSize: 12)),
+                    Text('${fmt.format(holding.buyPricePerGram)}/g', style: const TextStyle(fontSize: 12)),
                   ],
                 ),
               ),

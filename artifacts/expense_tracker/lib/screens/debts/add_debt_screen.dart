@@ -104,7 +104,7 @@ class _AddDebtScreenState extends State<AddDebtScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _status,
+                initialValue: _status,
                 decoration: const InputDecoration(labelText: 'Status'),
                 items: const [
                   DropdownMenuItem(value: 'pending', child: Text('Pending')),

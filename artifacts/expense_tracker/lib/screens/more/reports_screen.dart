@@ -166,7 +166,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             children: [
               Expanded(
                 child: DropdownButtonFormField<String?>(
-                  value: _accountId,
+                  initialValue: _accountId,
                   decoration: const InputDecoration(labelText: 'Account', isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8)),
                   items: [
                     const DropdownMenuItem(value: null, child: Text('All Accounts')),
@@ -179,7 +179,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: DropdownButtonFormField<String?>(
-                  value: _categoryId,
+                  initialValue: _categoryId,
                   decoration: const InputDecoration(labelText: 'Category', isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8)),
                   items: [
                     const DropdownMenuItem(value: null, child: Text('All Categories')),

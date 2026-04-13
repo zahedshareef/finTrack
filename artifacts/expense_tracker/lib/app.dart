@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'theme/app_theme.dart';
-import 'providers/data_provider.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/transactions/transactions_screen.dart';
 import 'screens/debts/debts_screen.dart';

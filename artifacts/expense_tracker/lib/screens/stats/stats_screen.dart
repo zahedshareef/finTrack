@@ -319,7 +319,7 @@ class _StatsScreenState extends State<StatsScreen> {
                 Switch(
                   value: acc.includeInTotal,
                   onChanged: (v) => provider.updateAccount(acc.copyWith(includeInTotal: v)),
-                  activeColor: AppTheme.primary,
+                  activeThumbColor: AppTheme.primary,
                 ),
               ],
             ),

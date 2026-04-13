@@ -106,7 +106,7 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _type,
+                initialValue: _type,
                 decoration: const InputDecoration(labelText: 'Account Type'),
                 items: accountTypes.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
                 onChanged: (v) => setState(() => _type = v!),
@@ -120,7 +120,7 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
                 onChanged: (v) => setState(() => _includeInTotal = v),
                 title: const Text('Include in total balance'),
                 contentPadding: EdgeInsets.zero,
-                activeColor: AppTheme.primary,
+                activeThumbColor: AppTheme.primary,
               ),
               const SizedBox(height: 24),
               SizedBox(

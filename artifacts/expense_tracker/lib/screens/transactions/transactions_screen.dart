@@ -193,7 +193,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               const Text('Filter Transactions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
               DropdownButtonFormField<String?>(
-                value: _selectedAccountId,
+                initialValue: _selectedAccountId,
                 decoration: const InputDecoration(labelText: 'Account'),
                 items: [
                   const DropdownMenuItem(value: null, child: Text('All Accounts')),
@@ -204,7 +204,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String?>(
-                value: _selectedCategoryId,
+                initialValue: _selectedCategoryId,
                 decoration: const InputDecoration(labelText: 'Category'),
                 items: [
                   const DropdownMenuItem(value: null, child: Text('All Categories')),
@@ -217,7 +217,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<bool?>(
-                value: _isIncome,
+                initialValue: _isIncome,
                 decoration: const InputDecoration(labelText: 'Type'),
                 items: const [
                   DropdownMenuItem(value: null, child: Text('All')),

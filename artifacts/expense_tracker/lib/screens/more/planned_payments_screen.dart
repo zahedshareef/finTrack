@@ -200,7 +200,7 @@ void _showMarkPaidDialog(BuildContext context, DataProvider provider, PlannedPay
             Text('Record expense of ${NumberFormat.currency(symbol: '${payment.currency} ', decimalDigits: 2).format(payment.amount)} for "${payment.name}"?'),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: selectedAccountId,
+              initialValue: selectedAccountId,
               decoration: const InputDecoration(labelText: 'Deduct from Account'),
               items: accounts.map((a) => DropdownMenuItem(value: a.id, child: Text(a.name))).toList(),
               onChanged: (v) => setState(() => selectedAccountId = v),
@@ -293,7 +293,7 @@ class _EditPaymentSheetState extends State<_EditPaymentSheet> {
             CurrencyPickerDropdown(value: _currency, onChanged: (v) => setState(() => _currency = v!)),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _accountId.isNotEmpty ? _accountId : null,
+              initialValue: _accountId.isNotEmpty ? _accountId : null,
               decoration: const InputDecoration(labelText: 'Account'),
               items: provider.accounts.map((a) => DropdownMenuItem(value: a.id, child: Text(a.name))).toList(),
               onChanged: (v) => setState(() => _accountId = v ?? _accountId),
@@ -329,11 +329,11 @@ class _EditPaymentSheetState extends State<_EditPaymentSheet> {
               onChanged: (v) => setState(() => _isRecurring = v),
               title: const Text('Recurring'),
               contentPadding: EdgeInsets.zero,
-              activeColor: AppTheme.primary,
+              activeThumbColor: AppTheme.primary,
             ),
             if (_isRecurring)
               DropdownButtonFormField<String>(
-                value: _recurrencePeriod,
+                initialValue: _recurrencePeriod,
                 decoration: const InputDecoration(labelText: 'Period'),
                 items: const [
                   DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
@@ -418,7 +418,7 @@ class _AddPaymentSheetState extends State<_AddPaymentSheet> {
             CurrencyPickerDropdown(value: _currency, onChanged: (v) => setState(() => _currency = v!)),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _accountId,
+              initialValue: _accountId,
               decoration: const InputDecoration(labelText: 'Account'),
               items: provider.accounts.map((a) => DropdownMenuItem(value: a.id, child: Text(a.name))).toList(),
               onChanged: (v) => setState(() => _accountId = v),
@@ -477,11 +477,11 @@ class _AddPaymentSheetState extends State<_AddPaymentSheet> {
               onChanged: (v) => setState(() => _isRecurring = v),
               title: const Text('Recurring'),
               contentPadding: EdgeInsets.zero,
-              activeColor: AppTheme.primary,
+              activeThumbColor: AppTheme.primary,
             ),
             if (_isRecurring)
               DropdownButtonFormField<String>(
-                value: _recurrencePeriod,
+                initialValue: _recurrencePeriod,
                 decoration: const InputDecoration(labelText: 'Period'),
                 items: const [
                   DropdownMenuItem(value: 'weekly', child: Text('Weekly')),

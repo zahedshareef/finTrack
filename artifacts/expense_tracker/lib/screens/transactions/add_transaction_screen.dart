@@ -128,7 +128,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _accountId,
+                initialValue: _accountId,
                 decoration: const InputDecoration(labelText: 'Account'),
                 items: provider.accounts
                     .map((a) => DropdownMenuItem(value: a.id, child: Text(a.name)))

@@ -49,9 +49,7 @@ class BudgetsScreen extends StatelessWidget {
                         ),
                         if (budget != null)
                           Text(
-                            NumberFormat.currency(symbol: '', decimalDigits: 0).format(spent) +
-                                ' / ' +
-                                NumberFormat.currency(symbol: '', decimalDigits: 0).format(budget.limit),
+                            '${NumberFormat.currency(symbol: '', decimalDigits: 0).format(spent)} / ${NumberFormat.currency(symbol: '', decimalDigits: 0).format(budget.limit)}',
                             style: TextStyle(
                               color: pct >= 1.0 ? AppTheme.expense : pct >= 0.8 ? AppTheme.warning : Colors.white70,
                               fontSize: 12,

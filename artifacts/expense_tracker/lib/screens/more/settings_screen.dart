@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/data_provider.dart';
-import '../../widgets/currency_picker.dart';
 import '../../services/currency_service.dart';
 import '../../theme/app_theme.dart';
 
@@ -32,7 +31,7 @@ class SettingsScreen extends StatelessWidget {
                     style: TextStyle(color: Colors.white54, fontSize: 12)),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: provider.baseCurrency,
+                  initialValue: provider.baseCurrency,
                   decoration: const InputDecoration(labelText: 'Base Currency'),
                   items: CurrencyService.supportedCurrencies
                       .map((c) => DropdownMenuItem(value: c, child: Text(c)))

@@ -16,7 +16,7 @@ class AccountCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final formatter = NumberFormat.currency(symbol: account.currency + ' ', decimalDigits: 2);
+    final formatter = NumberFormat.currency(symbol: '${account.currency} ', decimalDigits: 2);
     final isNegative = account.balance < 0;
 
     return GestureDetector(
